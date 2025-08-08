@@ -63,6 +63,18 @@ CONFIG_PRESETS = {
         "language": "eng+chi_sim",
         "output_type": "pdfa",
         "optimize": "2"
+    },
+    "强制重新OCR": {
+        "mode": "force-ocr",
+        "language": "chi_sim",
+        "output_type": "pdfa",
+        "optimize": "2"
+    },
+    "跳过文本页面": {
+        "mode": "skip-text",
+        "language": "chi_sim",
+        "output_type": "pdfa",
+        "optimize": "2"
     }
 }
 
@@ -94,6 +106,31 @@ def validate_config(config: Dict[str, Any]) -> List[str]:
         errors.append("JPEG质量应在1-100之间")
     
     return errors
+
+def check_pdf_has_text(file_data: bytes) -> bool:
+    """检测PDF是否已包含文本"""
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+            tmp_file.write(file_data)
+            tmp_file.flush()
+            
+            with pikepdf.open(tmp_file.name) as pdf:
+                for page_num, page in enumerate(pdf.pages[:3]):  # 只检查前3页
+                    try:
+                        # 尝试提取文本
+                        if '/Contents' in page:
+                            # 简单检测是否有文本内容
+                            contents = str(page.get('/Contents', ''))
+                            if 'Tj' in contents or 'TJ' in contents or 'Td' in contents:
+                                return True
+                    except Exception:
+                        continue
+                        
+            os.unlink(tmp_file.name)
+            return False
+    except Exception as e:
+        logger.warning(f"检测PDF文本时出错: {e}")
+        return False
 
 # 页面配置
 st.set_page_config(
@@ -163,11 +200,15 @@ with st.sidebar:
         format_func=lambda x: {
             "normal": "正常模式",
             "skip-text": "跳过文本页面", 
-            "force-ocr": "强制OCR",
+            "force-ocr": "强制OCR（覆盖已有文本）",
             "redo-ocr": "重新OCR"
         }[x],
-        help="选择OCR处理模式"
+        help="选择OCR处理模式。如果PDF已包含文本，建议选择'强制OCR'或'跳过文本页面'"
     )
+    
+    # 智能模式建议
+    if mode == "normal":
+        st.info("💡 提示：如果PDF已包含文本，处理可能失败。建议选择'强制OCR'模式。")
     
     lang_options = ["eng", "chi_sim", "chi_tra", "eng+chi_sim", "jpn", "kor", "fra", "deu", "spa"]
     lang_default = preset_config.get("language", "chi_sim")
@@ -323,18 +364,28 @@ with col1:
         for key, value in file_details.items():
             st.write(f"**{key}:** {value}")
         
-        # 如果是PDF文件，显示元数据
+        # 如果是PDF文件，显示元数据和智能检测
         if uploaded_file.name.lower().endswith('.pdf'):
             try:
+                file_data = uploaded_file.getvalue()
+                
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-                    tmp_file.write(uploaded_file.getvalue())
+                    tmp_file.write(file_data)
                     tmp_file.flush()
                     
                     with pikepdf.open(tmp_file.name) as pdf:
-                        st.markdown("#### 📄 PDF元数据")
+                        st.markdown("#### 📄 PDF信息")
                         
                         # 基本信息
                         st.write(f"**页数:** {len(pdf.pages)}")
+                        
+                        # 智能文本检测
+                        has_text = check_pdf_has_text(file_data)
+                        if has_text:
+                            st.warning("⚠️ **检测到文本层**：此PDF已包含文本内容")
+                            st.info("💡 **建议**：选择'强制重新OCR'或'跳过文本页面'预设模板")
+                        else:
+                            st.success("✅ **纯图像PDF**：未检测到文本层，可以正常OCR处理")
                         
                         # 元数据编辑
                         with st.expander("✏️ 编辑元数据"):
@@ -426,9 +477,25 @@ def process_single_file(file, args, progress_callback=None):
                         logger.error(f"处理失败: {error_msg}")
                         return None, error_msg
                 else:
-                    error_msg = f"OCR处理失败 (退出码: {process.returncode})\n{stderr}"
-                    logger.error(f"处理失败: {error_msg}")
-                    return None, error_msg
+                     error_msg = f"OCR处理失败 (退出码: {process.returncode})\n{stderr}"
+                     logger.error(f"处理失败: {error_msg}")
+                     
+                     # 智能错误处理建议
+                     if "PriorOcrFoundError" in stderr or "page already has text" in stderr:
+                         error_msg += "\n\n💡 解决方案：\n" \
+                                     "• 该PDF已包含文本层\n" \
+                                     "• 请选择'强制OCR（覆盖已有文本）'模式重新处理\n" \
+                                     "• 或选择'跳过文本页面'模式跳过已有文本的页面"
+                     elif "TesseractNotFoundError" in stderr:
+                         error_msg += "\n\n💡 解决方案：\n" \
+                                     "• Tesseract OCR引擎未安装或未找到\n" \
+                                     "• 请确保已正确安装Tesseract OCR"
+                     elif "language" in stderr.lower() and "not found" in stderr.lower():
+                         error_msg += "\n\n💡 解决方案：\n" \
+                                     "• 所选语言包未安装\n" \
+                                     "• 请安装相应的Tesseract语言包"
+                     
+                     return None, error_msg
                     
     except Exception as e:
         error_msg = f"处理过程中发生错误: {str(e)}"
