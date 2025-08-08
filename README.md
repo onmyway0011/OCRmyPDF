@@ -1,5 +1,6 @@
 <!-- SPDX-FileCopyrightText: 2014 Julien Pfefferkorn -->
 <!-- SPDX-FileCopyrightText: 2015 James R. Barlow -->
+<!-- SPDX-FileCopyrightText: 2025 Enhanced Web Interface -->
 <!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
 
 <img src="docs/images/logo.svg" width="240" alt="OCRmyPDF">
@@ -11,7 +12,7 @@
 [docs]: https://readthedocs.org/projects/ocrmypdf/badge/?version=latest "RTD"
 [pyversions]: https://img.shields.io/pypi/pyversions/ocrmypdf "Supported Python versions"
 
-OCRmyPDF adds an OCR text layer to scanned PDF files, allowing them to be searched or copy-pasted.
+OCRmyPDF adds an OCR text layer to scanned PDF files, allowing them to be searched or copy-pasted. Now with an enhanced web interface for easy configuration and batch processing!
 
 ```bash
 ocrmypdf                      # it's a scriptable command line program
@@ -29,6 +30,7 @@ ocrmypdf                      # it's a scriptable command line program
 
 ## Main features
 
+### Core OCR Capabilities
 - Generates a searchable [PDF/A](https://en.wikipedia.org/?title=PDF/A) file from a regular PDF
 - Places OCR text accurately below the image to ease copy / paste
 - Keeps the exact resolution of the original embedded images
@@ -41,6 +43,16 @@ ocrmypdf                      # it's a scriptable command line program
 - Keeps your private data private.
 - Scales properly to handle files with thousands of pages.
 - Battle-tested on millions of PDFs.
+
+### 🆕 Enhanced Web Interface
+- **Beautiful Web UI**: Modern, responsive interface with Chinese language support
+- **Preset Templates**: Quick configuration for common use cases (Document Scanning, Book Scanning, etc.)
+- **Batch Processing**: Process multiple files simultaneously with progress tracking
+- **Real-time Progress**: Visual progress indicators for both single and batch operations
+- **Configuration Validation**: Automatic parameter validation with helpful error messages
+- **PDF Metadata Editing**: Edit title, author, subject, and keywords directly in the interface
+- **Enhanced Error Handling**: Comprehensive logging and user-friendly error messages
+- **File Size Comparison**: See before/after file sizes for optimization insights
 
 <img src="misc/screencast/demo.svg" alt="Demo of OCRmyPDF in a terminal session">
 
@@ -64,8 +76,10 @@ I searched the web for a free command line tool to OCR PDF files: I found many, 
 
 Linux, Windows, macOS and FreeBSD are supported. Docker images are also available, for both x64 and ARM.
 
+### Command Line Installation
+
 | Operating system              | Install command               |
-| ----------------------------- | ------------------------------|
+| ----------------------------- | -------------------------------|
 | Debian, Ubuntu                | ``apt install ocrmypdf``      |
 | Windows Subsystem for Linux   | ``apt install ocrmypdf``      |
 | Fedora                        | ``dnf install ocrmypdf``      |
@@ -75,6 +89,20 @@ Linux, Windows, macOS and FreeBSD are supported. Docker images are also availabl
 | LinuxBrew                     | ``brew install ocrmypdf``     |
 | FreeBSD                       | ``pkg install py-ocrmypdf``   |
 | Ubuntu Snap                   | ``snap install ocrmypdf``     |
+
+### 🆕 Web Interface Setup
+
+For the enhanced web interface, install additional dependencies:
+
+```bash
+# Install web interface dependencies
+pip install streamlit pikepdf
+
+# Launch the web interface
+streamlit run ocrmypdf_web.py
+```
+
+The web interface will be available at `http://localhost:8501`
 
 For everyone else, [see our documentation](https://ocrmypdf.readthedocs.io/en/latest/installation.html) for installation steps.
 
@@ -114,6 +142,8 @@ Please report issues on our [GitHub issues](https://github.com/ocrmypdf/OCRmyPDF
 
 ## Feature demo
 
+### Command Line Usage
+
 ```bash
 # Add an OCR layer and convert to PDF/A
 ocrmypdf input.pdf output.pdf
@@ -133,6 +163,37 @@ ocrmypdf -l eng+fra Bilingual-English-French.pdf Bilingual-English-French.pdf
 # Deskew (straighten crooked pages)
 ocrmypdf --deskew input.pdf output.pdf
 ```
+
+### 🆕 Web Interface Usage
+
+1. **Launch the web interface:**
+   ```bash
+   streamlit run ocrmypdf_web.py
+   ```
+
+2. **Quick Start with Presets:**
+   - Select "文档扫描" (Document Scanning) for general documents
+   - Select "图书扫描" (Book Scanning) for books with rotation correction
+   - Select "混合语言" (Mixed Language) for English+Chinese documents
+
+3. **Batch Processing:**
+   - Enable "批量处理模式" (Batch Processing Mode)
+   - Upload multiple PDF or image files
+   - Monitor real-time progress for each file
+   - Download processed files individually
+
+4. **Advanced Configuration:**
+   - Adjust DPI settings for image quality
+   - Configure optimization levels
+   - Edit PDF metadata (title, author, keywords)
+   - Set custom OCR languages and processing options
+
+**Features:**
+- 🎨 Beautiful Chinese/English interface
+- 📋 Preset templates for common scenarios
+- 🔄 Batch processing with progress tracking
+- ⚙️ Real-time configuration validation
+- 📊 File size comparison and optimization insights
 
 For more features, see the [documentation](https://ocrmypdf.readthedocs.io/en/latest/index.html).
 
